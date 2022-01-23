@@ -54,7 +54,7 @@ public class DFStreamingScore {
         void setInputFile(String value);
 
         @Description("Path of the file to read from")
-        @Default.String("gs://apache-beam-samples/IPLOutput.csv")
+        @Default.String("gs://apache-beam-samples")
         String getOutputFile();
         void setOutputFile(String value);
     }
