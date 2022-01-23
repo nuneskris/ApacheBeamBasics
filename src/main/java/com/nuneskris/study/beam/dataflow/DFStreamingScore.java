@@ -70,7 +70,7 @@ public class DFStreamingScore {
                 PipelineOptionsFactory.fromArgs(args)
                         .withValidation()
                         .as(StreamingScoreExtractOptions.class);
-        Pipeline pipeline = Pipeline.create();
+        Pipeline pipeline = Pipeline.create(options);
 
         pipeline.apply(TextIO.read().from(options.getInputFile()))
                 .apply(ParDo.of(new BeamScore.ExtractScore()))
