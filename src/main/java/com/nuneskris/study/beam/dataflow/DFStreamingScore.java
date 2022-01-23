@@ -78,7 +78,7 @@ public class DFStreamingScore {
                 .apply(ParDo.of(new BeamScore.ConvertToKV()))
                 .apply(GroupByKey.<String, Integer>create())
                 .apply(ParDo.of(new BeamScore.SumUpValuesByKey()))
-                .apply(TextIO.write().to(options.getOutputFile()).withoutSharding())
+                .apply("WriteCounts",TextIO.write().to(options.getOutputFile()).withoutSharding())
         ;
         pipeline.run();
 
