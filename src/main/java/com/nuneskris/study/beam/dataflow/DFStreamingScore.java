@@ -54,7 +54,7 @@ public class DFStreamingScore {
         void setInputFile(String value);
 
         @Description("Path of the file to read from")
-        @Default.String("gs://cricket-score-study")
+        @Default.String("gs://cricket-score-study/output")
         String getOutputFile();
         void setOutputFile(String value);
     }
@@ -78,7 +78,7 @@ public class DFStreamingScore {
                 .apply(ParDo.of(new BeamScore.ConvertToKV()))
                 .apply(GroupByKey.<String, Integer>create())
                 .apply(ParDo.of(new BeamScore.SumUpValuesByKey()))
-                .apply("WriteCounts",TextIO.write().to(options.getOutputFile()).withoutSharding())
+                .apply("WriteCounts.csv",TextIO.write().to(options.getOutputFile()).withoutSharding())
         ;
         pipeline.run();
 
