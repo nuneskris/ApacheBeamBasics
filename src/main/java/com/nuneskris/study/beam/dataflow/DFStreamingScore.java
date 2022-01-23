@@ -49,12 +49,12 @@ public class DFStreamingScore {
     public interface StreamingScoreExtractOptions
             extends StudyOptions {
         @Description("Path of the file to read from")
-        @Default.String("gs://apache-beam-samples/IPLBall-by-Ball 2008-2020.csv")
+        @Default.String("gs://cricket-score-study/IPLBall-by-Ball 2008-2020.csv")
         String getInputFile();
         void setInputFile(String value);
 
         @Description("Path of the file to read from")
-        @Default.String("gs://apache-beam-samples")
+        @Default.String("gs://cricket-score-study")
         String getOutputFile();
         void setOutputFile(String value);
     }
