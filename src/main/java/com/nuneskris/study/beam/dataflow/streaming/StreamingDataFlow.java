@@ -15,7 +15,10 @@ import org.apache.beam.sdk.schemas.transforms.Convert;
 import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.beam.sdk.transforms.SerializableFunction;
+import org.apache.beam.sdk.transforms.windowing.FixedWindows;
+import org.apache.beam.sdk.transforms.windowing.Window;
 import org.apache.beam.sdk.values.Row;
+import org.joda.time.Duration;
 
 import java.io.IOException;
 import java.util.List;
@@ -107,6 +110,8 @@ public class StreamingDataFlow {
                                 .fromSubscription(options.getInputSubscription()))
                 .apply(Convert.toRows())
                 .apply(ParDo.of(new ConvertRowToString()))
+                .apply(
+                        Window.<String>into(FixedWindows.of(Duration.standardMinutes(1))))
                 .apply("WriteCounts.csv", TextIO.write().to(
                                 WindowedFilenamePolicy.writeWindowedFiles()
                                         .withOutputDirectory(options.getOutputDirectory())
