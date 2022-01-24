@@ -34,6 +34,7 @@ public class StreamingDataFlow {
                 "The Cloud Pub/Sub subscription to consume from. "
                         + "The name should be in the format of "
                         + "projects/<project-id>/subscriptions/<subscription-name>.")
+
         ValueProvider<String> getInputSubscription();
 
         void setInputSubscription(ValueProvider<String> value);
@@ -45,7 +46,7 @@ public class StreamingDataFlow {
 
         @Description(
                 "This determines whether the template reads from " + "a pub/sub subscription or a topic")
-        @Default.Boolean(false)
+        @Default.Boolean(true)
         Boolean getUseSubscription();
 
         void setUseSubscription(Boolean value);
@@ -57,13 +58,13 @@ public class StreamingDataFlow {
         void setOutputDirectory(ValueProvider<String> value);
 
         @Description("The filename prefix of the files to write to.")
-        @Default.String("output")
+        @Default.String("Output")
         ValueProvider<String> getOutputFilenamePrefix();
 
         void setOutputFilenamePrefix(ValueProvider<String> value);
 
         @Description("The suffix of the files to write.")
-        @Default.String("")
+        @Default.String("avro")
         ValueProvider<String> getOutputFilenameSuffix();
 
         void setOutputFilenameSuffix(ValueProvider<String> value);
