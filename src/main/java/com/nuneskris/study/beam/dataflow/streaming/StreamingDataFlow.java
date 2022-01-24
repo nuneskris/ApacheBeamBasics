@@ -1,18 +1,20 @@
 package com.nuneskris.study.beam.dataflow.streaming;
 
 import com.nuneskris.study.beam.dataflow.boiler.SchemaUtils;
+import com.nuneskris.study.beam.dataflow.boiler.WindowedFilenamePolicy;
+import com.nuneskris.study.beam.dataflow.boiler.WindowedFilenamePolicyOptions;
 import org.apache.avro.Schema;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.PipelineResult;
+import org.apache.beam.sdk.io.FileBasedSink;
 import org.apache.beam.sdk.io.TextIO;
+import org.apache.beam.sdk.io.fs.ResourceId;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubIO;
-import org.apache.beam.sdk.options.Default;
-import org.apache.beam.sdk.options.Description;
-import org.apache.beam.sdk.options.PipelineOptionsFactory;
-import org.apache.beam.sdk.options.Validation;
+import org.apache.beam.sdk.options.*;
 import org.apache.beam.sdk.schemas.transforms.Convert;
 import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.transforms.ParDo;
+import org.apache.beam.sdk.transforms.SerializableFunction;
 import org.apache.beam.sdk.values.Row;
 
 import java.io.IOException;
@@ -24,22 +26,52 @@ public class StreamingDataFlow {
      * {@linkPubsubAvroToBigQuery} pipeline.
      */
     public interface PubsubAvroToBigQueryOptions
-            extends PubsubCommonOptions.ReadSubscriptionOptions {
+            extends PipelineOptions, StreamingOptions, WindowedFilenamePolicyOptions {
+        @Description(
+                "The Cloud Pub/Sub subscription to consume from. "
+                        + "The name should be in the format of "
+                        + "projects/<project-id>/subscriptions/<subscription-name>.")
+        ValueProvider<String> getInputSubscription();
 
-        @Description("GCS path to Avro schema file.")
+        void setInputSubscription(ValueProvider<String> value);
+
+        @Description("The Cloud Pub/Sub topic to read from.")
+        ValueProvider<String> getInputTopic();
+
+        void setInputTopic(ValueProvider<String> value);
+
+        @Description(
+                "This determines whether the template reads from " + "a pub/sub subscription or a topic")
+        @Default.Boolean(false)
+        Boolean getUseSubscription();
+
+        void setUseSubscription(Boolean value);
+
+        @Description("The directory to output files to. Must end with a slash.")
         @Validation.Required
-        @Default.String("gs://cricket-score-study")
-        String getSchemaBucketPath();
+        ValueProvider<String> getOutputDirectory();
 
-        void setSchemaBucketPath(String schemaBucketPath);
+        void setOutputDirectory(ValueProvider<String> value);
 
-        @Description("GCS path to Avro schema file.")
+        @Description("The filename prefix of the files to write to.")
+        @Default.String("output")
+        ValueProvider<String> getOutputFilenamePrefix();
+
+        void setOutputFilenamePrefix(ValueProvider<String> value);
+
+        @Description("The suffix of the files to write.")
+        @Default.String("")
+        ValueProvider<String> getOutputFilenameSuffix();
+
+        void setOutputFilenameSuffix(ValueProvider<String> value);
+
+        @Description("The Avro Write Temporary Directory. Must end with /")
         @Validation.Required
-        @Default.String("gs://cricket-score-study")
-        String getSchemaFilePath();
+        ValueProvider<String> getAvroTempDirectory();
 
-        void setSchemaFilePath(String schemaFilePath);
+        void setAvroTempDirectory(ValueProvider<String> value);
     }
+
 
     public static void main(String[] args) throws IOException {
         PubsubAvroToBigQueryOptions options =
@@ -75,7 +107,28 @@ public class StreamingDataFlow {
                                 .fromSubscription(options.getInputSubscription()))
                 .apply(Convert.toRows())
                 .apply(ParDo.of(new ConvertRowToString()))
-                .apply("WriteCounts.csv", TextIO.write().to("gs://cricket-score-study/outputavro.csv").withoutSharding());
+                .apply("WriteCounts.csv", TextIO.write().to(
+                                WindowedFilenamePolicy.writeWindowedFiles()
+                                        .withOutputDirectory(options.getOutputDirectory())
+                                        .withOutputFilenamePrefix(options.getOutputFilenamePrefix())
+                                        .withShardTemplate(options.getOutputShardTemplate())
+                                        .withSuffix(options.getOutputFilenameSuffix())
+                                        .withYearPattern(options.getYearPattern())
+                                        .withMonthPattern(options.getMonthPattern())
+                                        .withDayPattern(options.getDayPattern())
+                                        .withHourPattern(options.getHourPattern())
+                                        .withMinutePattern(options.getMinutePattern()))
+                        .withTempDirectory(
+                                ValueProvider.NestedValueProvider.of(
+                                        options.getAvroTempDirectory(),
+                                        (SerializableFunction<String, ResourceId>)
+                                                input -> FileBasedSink.convertToFileResourceIfPossible(input)))
+                        /*.withTempDirectory(FileSystems.matchNewResource(
+                        options.getAvroTempDirectory(),
+                        Boolean.TRUE))
+                        */
+                        .withWindowedWrites()
+                        .withNumShards(options.getNumShards()));
         return null;
     }
 }
