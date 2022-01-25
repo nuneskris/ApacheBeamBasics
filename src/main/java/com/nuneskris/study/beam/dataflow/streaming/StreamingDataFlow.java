@@ -12,9 +12,7 @@ import org.apache.beam.sdk.io.TextIO;
 import org.apache.beam.sdk.io.fs.ResourceId;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubIO;
 import org.apache.beam.sdk.options.*;
-import org.apache.beam.sdk.schemas.transforms.Convert;
 import org.apache.beam.sdk.transforms.DoFn;
-import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.beam.sdk.transforms.SerializableFunction;
 import org.apache.beam.sdk.transforms.windowing.FixedWindows;
 import org.apache.beam.sdk.transforms.windowing.Window;
@@ -111,11 +109,10 @@ public class StreamingDataFlow {
         schema = SchemaUtils.SCHEMA$;
         pipeline
                 .apply(
-                        "Read Avro records",
-                        PubsubIO.readAvroGenericRecords(schema)
-                                .fromSubscription(options.getInputSubscription()))
-                .apply(Convert.toRows())
-                .apply(ParDo.of(new ConvertRowToString()))
+                        "Read PubSub Events",
+                        PubsubIO.readStrings().fromSubscription(options.getInputSubscription()))
+               // .apply(Convert.toRows())
+               // .apply(ParDo.of(new ConvertRowToString()))
                 .apply(
                         Window.<String>into(FixedWindows.of(Duration.standardMinutes(1))))
                 .apply("WriteCounts.csv", TextIO.write()
