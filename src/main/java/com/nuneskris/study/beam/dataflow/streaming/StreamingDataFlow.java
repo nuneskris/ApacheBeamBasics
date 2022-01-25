@@ -1,8 +1,9 @@
 package com.nuneskris.study.beam.dataflow.streaming;
 
+import com.google.cloud.teleport.io.WindowedFilenamePolicy;
+import com.google.cloud.teleport.options.WindowedFilenamePolicyOptions;
+import com.google.cloud.teleport.util.DualInputNestedValueProvider;
 import com.nuneskris.study.beam.dataflow.boiler.SchemaUtils;
-import com.nuneskris.study.beam.dataflow.boiler.WindowedFilenamePolicy;
-import com.nuneskris.study.beam.dataflow.boiler.WindowedFilenamePolicyOptions;
 import org.apache.avro.Schema;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.PipelineResult;
@@ -28,13 +29,17 @@ public class StreamingDataFlow {
      * Provides custom {@link org.apache.beam.sdk.options.PipelineOptions} required to execute the
      * {@linkPubsubAvroToBigQuery} pipeline.
      */
-    public interface PubsubAvroToBigQueryOptions
+    /**
+     * Options supported by the pipeline.
+     *
+     * <p>Inherits standard configuration options.
+     */
+    public interface Options
             extends PipelineOptions, StreamingOptions, WindowedFilenamePolicyOptions {
         @Description(
                 "The Cloud Pub/Sub subscription to consume from. "
                         + "The name should be in the format of "
                         + "projects/<project-id>/subscriptions/<subscription-name>.")
-
         ValueProvider<String> getInputSubscription();
 
         void setInputSubscription(ValueProvider<String> value);
@@ -46,7 +51,7 @@ public class StreamingDataFlow {
 
         @Description(
                 "This determines whether the template reads from " + "a pub/sub subscription or a topic")
-        @Default.Boolean(true)
+        @Default.Boolean(false)
         Boolean getUseSubscription();
 
         void setUseSubscription(Boolean value);
@@ -57,31 +62,31 @@ public class StreamingDataFlow {
 
         void setOutputDirectory(ValueProvider<String> value);
 
+        @Description("The directory to output temporary files to. Must end with a slash.")
+        ValueProvider<String> getUserTempLocation();
+
+        void setUserTempLocation(ValueProvider<String> value);
+
         @Description("The filename prefix of the files to write to.")
-        @Default.String("Output")
+        @Default.String("output")
+        @Validation.Required
         ValueProvider<String> getOutputFilenamePrefix();
 
         void setOutputFilenamePrefix(ValueProvider<String> value);
 
         @Description("The suffix of the files to write.")
-        @Default.String("avro")
+        @Default.String("")
         ValueProvider<String> getOutputFilenameSuffix();
 
         void setOutputFilenameSuffix(ValueProvider<String> value);
-
-        @Description("The Avro Write Temporary Directory. Must end with /")
-        @Validation.Required
-        ValueProvider<String> getAvroTempDirectory();
-
-        void setAvroTempDirectory(ValueProvider<String> value);
     }
 
 
     public static void main(String[] args) throws IOException {
-        PubsubAvroToBigQueryOptions options =
+        Options options =
                 PipelineOptionsFactory.fromArgs(args)
                         .withValidation()
-                        .as(PubsubAvroToBigQueryOptions.class);
+                        .as(Options.class);
 
         run(options);
 
@@ -101,7 +106,7 @@ public class StreamingDataFlow {
     }
 
     static Schema schema;
-    public static PipelineResult run(PubsubAvroToBigQueryOptions options) {
+    public static PipelineResult run(Options options) {
         Pipeline pipeline = Pipeline.create(options);
         schema = SchemaUtils.SCHEMA$;
         pipeline
@@ -126,15 +131,33 @@ public class StreamingDataFlow {
                                         .withMinutePattern(options.getMinutePattern()))
                         .withTempDirectory(
                                 ValueProvider.NestedValueProvider.of(
-                                        options.getAvroTempDirectory(),
+                                        maybeUseUserTempLocation(
+                                                options.getUserTempLocation(), options.getOutputDirectory()),
                                         (SerializableFunction<String, ResourceId>)
                                                 input -> FileBasedSink.convertToFileResourceIfPossible(input)))
-                        /*.withTempDirectory(FileSystems.matchNewResource(
-                        options.getAvroTempDirectory(),
-                        Boolean.TRUE))
-                        */
-                        .withWindowedWrites()
-                        .withNumShards(options.getNumShards()));
+
+                        );
         return null;
     }
+    /**
+   * Utility method for using optional parameter userTempLocation as TempDirectory. This is useful
+   * when output bucket is locked and temporary data cannot be deleted.
+   *
+   * @param userTempLocation user provided temp location
+   * @param outputLocation user provided outputDirectory to be used as the default temp location
+   * @return userTempLocation if available, otherwise outputLocation is returned.
+   */
+        private static ValueProvider<String> maybeUseUserTempLocation(
+                ValueProvider<String> userTempLocation, ValueProvider<String> outputLocation) {
+            return DualInputNestedValueProvider.of(
+                    userTempLocation,
+                    outputLocation,
+                    new SerializableFunction<DualInputNestedValueProvider.TranslatorInput<String, String>, String>() {
+                        @Override
+                        public String apply(DualInputNestedValueProvider.TranslatorInput<String, String> input) {
+                            return (input.getX() != null) ? input.getX() : input.getY();
+                        }
+                    });
+        }
+
 }

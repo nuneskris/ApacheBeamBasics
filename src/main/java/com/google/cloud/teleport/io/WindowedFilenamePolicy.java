@@ -1,4 +1,4 @@
-package com.nuneskris.study.beam.dataflow.boiler;
+package com.google.cloud.teleport.io;
 
 import com.google.auto.value.AutoValue;
 import com.google.re2j.Matcher;
@@ -58,7 +58,7 @@ public abstract class WindowedFilenamePolicy extends FilenamePolicy {
             createUserPatternRegex(MINUTE_GROUP_NAME, "m+");
 
     public static WindowedFilenamePolicy writeWindowedFiles() {
-        return new AutoValue_WindowedFilenamePolicy.Builder().build();
+        return new com.google.cloud.teleport.io.AutoValue_WindowedFilenamePolicy.Builder().build();
     }
 
     @Nullable
