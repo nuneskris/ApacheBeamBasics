@@ -140,6 +140,7 @@ public class StreamingDataFlow {
                                                 input -> FileBasedSink.convertToFileResourceIfPossible(input)))
 
                         );
+        pipeline.run();
         return null;
     }
     /**
