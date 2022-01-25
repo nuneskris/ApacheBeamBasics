@@ -118,7 +118,10 @@ public class StreamingDataFlow {
                 .apply(ParDo.of(new ConvertRowToString()))
                 .apply(
                         Window.<String>into(FixedWindows.of(Duration.standardMinutes(1))))
-                .apply("WriteCounts.csv", TextIO.write().to(
+                .apply("WriteCounts.csv", TextIO.write()
+                                .withWindowedWrites()
+                                .withNumShards(options.getNumShards())
+                                .to(
                                 WindowedFilenamePolicy.writeWindowedFiles()
                                         .withOutputDirectory(options.getOutputDirectory())
                                         .withOutputFilenamePrefix(options.getOutputFilenamePrefix())
