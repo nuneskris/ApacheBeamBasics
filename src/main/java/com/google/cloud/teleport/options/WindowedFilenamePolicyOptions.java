@@ -49,7 +49,7 @@ public interface WindowedFilenamePolicyOptions extends PipelineOptions {
                     + "Nm (for minutes, example: 12m), "
                     + "Nh (for hours, example: 2h).")
     @Default.String("5m")
-    ValueProvider<String> getWindowDuration();
+    String getWindowDuration();
 
     void setWindowDuration(String value);
 
