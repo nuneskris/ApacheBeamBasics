@@ -100,7 +100,6 @@ public class StreamingAvroDataFlow {
             for(Schema.Field field: fields){
                 output = output + row.getString(field.name()) + ",";
             }
-            output = output.replaceAll(".$", "");
             c.output(output);
         }
     }
@@ -108,7 +107,7 @@ public class StreamingAvroDataFlow {
     static Schema schema;
     public static PipelineResult run(Options options) {
         Pipeline pipeline = Pipeline.create(options);
-        schema = SchemaUtils.SCHEMA$;
+        schema = SchemaUtils.getAvroSchema();
         pipeline
                 .apply(
                         "Read Avro records",

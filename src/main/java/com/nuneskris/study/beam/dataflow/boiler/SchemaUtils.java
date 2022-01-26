@@ -92,8 +92,8 @@ public class SchemaUtils {
      * @param schemaLocation Path to schema (e.g. gs://mybucket/path/).
      * @return {@link Schema}
      */
-    public static Schema getAvroSchema(String BUCKET_URL, String OBJECT_NAME) {
-        String schemaFile = getGcsFileAsString( BUCKET_URL,  OBJECT_NAME);
+    public static Schema getAvroSchema() {
+        String schemaFile = getGcsFileAsString( "gs://cricket-score-study",  "cricketscore.avsc");
         return new Schema.Parser().parse(schemaFile);
     }
 
