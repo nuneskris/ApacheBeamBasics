@@ -93,14 +93,15 @@ public class StreamingAvroDataFlow {
         run(options);
 
     }
+
+
     public static class ConvertRowToString extends DoFn<org.apache.beam.sdk.values.Row, String> {
         @ProcessElement
         public void processElement(ProcessContext c) {
             Row row = c.element();
-
             String output = "";
-            for(Schema.Field field: fields){
-                output = output + row.getString(field.name()) + ",";
+            for(Object value: row.getValues()){
+                output = output + value + ",";
             }
             c.output(output);
         }
