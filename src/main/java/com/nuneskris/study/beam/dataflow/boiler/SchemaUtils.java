@@ -93,7 +93,7 @@ public class SchemaUtils {
      * @return {@link Schema}
      */
     public static Schema getAvroSchema() {
-        String schemaFile = getGcsFileAsString( "gs://cricket-score-study",  "cricketscore.avsc");
+        String schemaFile = getGcsFileAsString( "cricket-score-study",  "cricketscore.avsc");
         return new Schema.Parser().parse(schemaFile);
     }
 
