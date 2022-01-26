@@ -113,7 +113,7 @@ public class StreamingAvroDataFlow {
                         "Read Avro records",
                         PubsubIO.readAvroGenericRecords(schema)
                                 .fromSubscription(options.getInputSubscription())
-                                .withDeadLetterTopic("deadletter-topic"))
+                                .withDeadLetterTopic("projects/java-maven-dataflow/topics/deadletter-topic"))
 
                 .apply(Convert.toRows())
                 .apply(ParDo.of(new ConvertRowToString()))
