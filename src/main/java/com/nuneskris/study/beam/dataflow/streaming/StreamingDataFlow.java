@@ -3,7 +3,6 @@ package com.nuneskris.study.beam.dataflow.streaming;
 import com.google.cloud.teleport.io.WindowedFilenamePolicy;
 import com.google.cloud.teleport.options.WindowedFilenamePolicyOptions;
 import com.google.cloud.teleport.util.DualInputNestedValueProvider;
-import com.nuneskris.study.beam.dataflow.boiler.SchemaUtils;
 import org.apache.avro.Schema;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.PipelineResult;
@@ -90,7 +89,7 @@ public class StreamingDataFlow {
     static Schema schema;
     public static PipelineResult run(Options options) {
         Pipeline pipeline = Pipeline.create(options);
-        schema = SchemaUtils.SCHEMA$;
+
         pipeline
                 .apply(
                         "Read PubSub Events",
