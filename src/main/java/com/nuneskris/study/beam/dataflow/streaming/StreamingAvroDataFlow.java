@@ -12,14 +12,19 @@ import org.apache.beam.sdk.io.TextIO;
 import org.apache.beam.sdk.io.fs.ResourceId;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubIO;
 import org.apache.beam.sdk.options.*;
+import org.apache.beam.sdk.schemas.transforms.Convert;
+import org.apache.beam.sdk.transforms.DoFn;
+import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.beam.sdk.transforms.SerializableFunction;
 import org.apache.beam.sdk.transforms.windowing.FixedWindows;
 import org.apache.beam.sdk.transforms.windowing.Window;
+import org.apache.beam.sdk.values.Row;
 import org.joda.time.Duration;
 
 import java.io.IOException;
+import java.util.List;
 
-public class StreamingDataFlow {
+public class StreamingAvroDataFlow {
     /**
      * Provides custom {@link org.apache.beam.sdk.options.PipelineOptions} required to execute the
      * {@linkPubsubAvroToBigQuery} pipeline.
@@ -86,6 +91,19 @@ public class StreamingDataFlow {
         run(options);
 
     }
+    public static class ConvertRowToString extends DoFn<org.apache.beam.sdk.values.Row, String> {
+        @ProcessElement
+        public void processElement(ProcessContext c) {
+            Row row = c.element();
+            List<Schema.Field> fields = schema.getFields();
+            String output = "";
+            for(Schema.Field field: fields){
+                output = output + row.getString(field.name()) + ",";
+            }
+            output = output.replaceAll(".$", "");
+            c.output(output);
+        }
+    }
 
     static Schema schema;
     public static PipelineResult run(Options options) {
@@ -93,8 +111,11 @@ public class StreamingDataFlow {
         schema = SchemaUtils.SCHEMA$;
         pipeline
                 .apply(
-                        "Read PubSub Events",
-                        PubsubIO.readStrings().fromSubscription(options.getInputSubscription()))
+                        "Read Avro records",
+                        PubsubIO.readAvroGenericRecords(schema)
+                                .fromSubscription(options.getInputSubscription()))
+                .apply(Convert.toRows())
+                .apply(ParDo.of(new ConvertRowToString()))
                 .apply(
                         Window.<String>into(FixedWindows.of(Duration.standardMinutes(1))))
                 .apply("WriteCounts.csv", TextIO.write()
