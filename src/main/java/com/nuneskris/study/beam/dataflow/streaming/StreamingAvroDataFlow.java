@@ -87,6 +87,8 @@ public class StreamingAvroDataFlow {
                 PipelineOptionsFactory.fromArgs(args)
                         .withValidation()
                         .as(Options.class);
+        schema = SchemaUtils.getAvroSchema();
+        fields = schema.getFields();
 
         run(options);
 
@@ -95,7 +97,7 @@ public class StreamingAvroDataFlow {
         @ProcessElement
         public void processElement(ProcessContext c) {
             Row row = c.element();
-            List<Schema.Field> fields = schema.getFields();
+
             String output = "";
             for(Schema.Field field: fields){
                 output = output + row.getString(field.name()) + ",";
@@ -103,11 +105,11 @@ public class StreamingAvroDataFlow {
             c.output(output);
         }
     }
-
+    static List<Schema.Field> fields;
     static Schema schema;
     public static PipelineResult run(Options options) {
         Pipeline pipeline = Pipeline.create(options);
-        schema = SchemaUtils.getAvroSchema();
+
         pipeline
                 .apply(
                         "Read Avro records",

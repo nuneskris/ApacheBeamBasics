@@ -10,7 +10,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
-import java.io.IOException;
 
 /** Schema utilities for KafkaToBigQuery pipeline. */
 public class SchemaUtils {
@@ -71,12 +70,9 @@ public class SchemaUtils {
                     + "}";
 
     /**
-     * The {@link SchemaUtils#getGcsFileAsString(String)} reads a file from GCS and returns it as a
+     * The  reads a file from GCS and returns it as a
      * string.
      *
-     * @param filePath path to file in GCS
-     * @return contents of the file as a string
-     * @throws IOException thrown if not able to read file
      */
     public static String getGcsFileAsString(String BUCKET_URL, String OBJECT_NAME) {
         Storage storage = StorageOptions.getDefaultInstance().getService();
@@ -86,10 +82,9 @@ public class SchemaUtils {
     }
 
     /**
-     * The {@link SchemaUtils#getAvroSchema(String)} reads an Avro schema file from GCS, parses it and
+     * The  reads an Avro schema file from GCS, parses it and
      * returns a new {@link Schema} object.
      *
-     * @param schemaLocation Path to schema (e.g. gs://mybucket/path/).
      * @return {@link Schema}
      */
     public static Schema getAvroSchema() {
