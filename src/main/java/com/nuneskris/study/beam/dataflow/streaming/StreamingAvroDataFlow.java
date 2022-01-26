@@ -112,7 +112,9 @@ public class StreamingAvroDataFlow {
                 .apply(
                         "Read Avro records",
                         PubsubIO.readAvroGenericRecords(schema)
-                                .fromSubscription(options.getInputSubscription()))
+                                .fromSubscription(options.getInputSubscription())
+                                .withDeadLetterTopic("deadletter-topic"))
+
                 .apply(Convert.toRows())
                 .apply(ParDo.of(new ConvertRowToString()))
                 .apply(
