@@ -3,7 +3,7 @@ package com.nuneskris.study.beam.dataflow.streaming;
 import com.google.cloud.teleport.io.WindowedFilenamePolicy;
 import com.google.cloud.teleport.options.WindowedFilenamePolicyOptions;
 import com.google.cloud.teleport.util.DualInputNestedValueProvider;
-import com.nuneskris.study.beam.dataflow.boiler.AvroSchemaUtil;
+import com.google.cloud.teleport.v2.utils.SchemaUtils;
 import org.apache.avro.Schema;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.PipelineResult;
@@ -24,7 +24,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.List;
 
 public class StreamingAvroDataFlow {
 
@@ -44,15 +43,11 @@ public class StreamingAvroDataFlow {
 
         @Description("GCS path to Avro schema file.")
         @Validation.Required
-        String getSchemaBlobName();
+        String getSchemaPath();
 
-        void setSchemaBlobName(String schemaBlobName);
+        void setSchemaPath(String schemaPath);
 
-        @Description("GCS path to Avro schema file.")
-        @Validation.Required
-        String getSchemaBucketName();
 
-        void setSchemaBucketName(String schemaBucketName);
 
 
         @Description(
@@ -106,11 +101,6 @@ public class StreamingAvroDataFlow {
                 PipelineOptionsFactory.fromArgs(args)
                         .withValidation()
                         .as(Options.class);
-        schema = AvroSchemaUtil.getSchema(options.getSchemaBucketName(),options.getSchemaBlobName());
-        fields = schema.getFields();
-        for(Schema.Field f : fields){
-            LOG.info("schemafield::"+f.name());
-        }
         run(options);
     }
 
@@ -127,10 +117,12 @@ public class StreamingAvroDataFlow {
         }
     }
 
-    static List<Schema.Field> fields;
-    static Schema schema;
+
     public static PipelineResult run(Options options) {
+        // Create the pipeline.
         Pipeline pipeline = Pipeline.create(options);
+
+        Schema schema = SchemaUtils.getAvroSchema(options.getSchemaPath());
 
         pipeline
                 .apply(
