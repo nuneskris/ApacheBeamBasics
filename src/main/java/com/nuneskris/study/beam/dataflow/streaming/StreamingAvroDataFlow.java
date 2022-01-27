@@ -3,6 +3,7 @@ package com.nuneskris.study.beam.dataflow.streaming;
 import com.google.cloud.teleport.io.WindowedFilenamePolicy;
 import com.google.cloud.teleport.options.WindowedFilenamePolicyOptions;
 import com.google.cloud.teleport.util.DualInputNestedValueProvider;
+import com.nuneskris.study.beam.dataflow.boiler.AvroSchemaUtil;
 import org.apache.avro.Schema;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.PipelineResult;
@@ -19,11 +20,15 @@ import org.apache.beam.sdk.transforms.windowing.FixedWindows;
 import org.apache.beam.sdk.transforms.windowing.Window;
 import org.apache.beam.sdk.values.Row;
 import org.joda.time.Duration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.List;
 
 public class StreamingAvroDataFlow {
+
+    private static final Logger LOG = LoggerFactory.getLogger(StreamingAvroDataFlow.class);
     /**
      * Provides custom {@link org.apache.beam.sdk.options.PipelineOptions} required to execute the
      * {@linkPubsubAvroToBigQuery} pipeline.
@@ -35,6 +40,21 @@ public class StreamingAvroDataFlow {
      */
     public interface Options
             extends PipelineOptions, StreamingOptions, WindowedFilenamePolicyOptions {
+
+
+        @Description("GCS path to Avro schema file.")
+        @Validation.Required
+        String getSchemaBlobName();
+
+        void setSchemaBlobName(String schemaBlobName);
+
+        @Description("GCS path to Avro schema file.")
+        @Validation.Required
+        String getSchemaBucketName();
+
+        void setSchemaBucketName(String schemaBucketName);
+
+
         @Description(
                 "The Cloud Pub/Sub subscription to consume from. "
                         + "The name should be in the format of "
@@ -86,11 +106,12 @@ public class StreamingAvroDataFlow {
                 PipelineOptionsFactory.fromArgs(args)
                         .withValidation()
                         .as(Options.class);
-
+        schema = AvroSchemaUtil.getSchema(options.getSchemaBucketName(),options.getSchemaBlobName());
         fields = schema.getFields();
-
+        for(Schema.Field f : fields){
+            LOG.info("schemafield::"+f.name());
+        }
         run(options);
-
     }
 
 
@@ -105,6 +126,7 @@ public class StreamingAvroDataFlow {
             c.output(output);
         }
     }
+
     static List<Schema.Field> fields;
     static Schema schema;
     public static PipelineResult run(Options options) {

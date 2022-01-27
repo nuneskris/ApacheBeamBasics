@@ -8,13 +8,7 @@ import com.google.cloud.storage.StorageOptions;
 import org.apache.avro.Schema;
 
 public class AvroSchemaUtil {
-
-    public static void main(String[] args) throws Exception {
-        Schema schema = AvroSchemaUtil.getSchema(args[0], args[1]);
-        for( Schema.Field field: schema.getFields()){
-            System.out.println(field.name());
-        }
-    }
+    
     public static Schema getSchema(String bucketName, String blobName){
         Storage storage = StorageOptions.getDefaultInstance().getService();
         BlobId blobId = BlobId.of(bucketName, blobName);
