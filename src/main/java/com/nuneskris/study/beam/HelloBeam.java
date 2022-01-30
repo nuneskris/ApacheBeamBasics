@@ -175,7 +175,6 @@ public class HelloBeam {
                 BigQueryIO.<AvroScore>write()
                         .to("java-maven-dataflow:avrotest.avrotab")
                         .withWriteDisposition(BigQueryIO.Write.WriteDisposition.WRITE_APPEND)
-                        .withCreateDisposition(BigQueryIO.Write.CreateDisposition.CREATE_IF_NEEDED)
                         .optimizedWrites());
 
         pipeline.run();
