@@ -1,10 +1,16 @@
 package com.nuneskris.study.beam;
 
+import org.apache.beam.repackaged.core.org.apache.commons.lang3.SerializationUtils;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.io.TextIO;
+import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO;
 import org.apache.beam.sdk.transforms.*;
+import org.apache.beam.sdk.transforms.join.CoGbkResult;
+import org.apache.beam.sdk.transforms.join.CoGroupByKey;
+import org.apache.beam.sdk.transforms.join.KeyedPCollectionTuple;
 import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PCollection;
+import org.apache.beam.sdk.values.TupleTag;
 
 /**
  * batch pipeline.
@@ -17,7 +23,7 @@ public class HelloBeam {
 
 
     private static PCollection<String> getLocalData(Pipeline pipeline) {
-        return pipeline.apply(TextIO.read().from("/Users/krisnunes/Desktop/Study/archive/IPLBall-by-Ball 2008-2020.csv"));
+        return pipeline.apply(TextIO.read().from("gs://cricket-score-study/IPLBall-by-Ball 2008-2020.csv"));
     }
     // ******** Function: MapElements *************************
     private static PCollection<String[]> parseMapElementsSplitString(PCollection<String> input) {
@@ -115,6 +121,68 @@ public class HelloBeam {
         pipeline.run();
     }
 
+    private static void joinUseCase(){
+        Pipeline pipeline = Pipeline.create();
+        PCollection<String> localData = getLocalData(pipeline);
+        PCollection<PojoScore> extractScoreAsObject =  localData .apply(ParDo.of(new BeamScore.ExtractScoreAsObject()));
+        PCollection<KV<String, Integer>> kv = extractScoreAsObject.apply(ParDo.of(new BeamScore.ConvertToKVForBatsman_runs()));
+
+        PCollection<KV<String, Iterable<Integer>>> kvIterableScores = kv.apply(GroupByKey.<String, Integer>create());
+
+        PCollection<KV<String, PojoScore>> sumUpBatsmanRunsLeft = kvIterableScores.apply(ParDo.of(new BeamScore.SumUpBatsmanRuns()));
+
+        PCollection<String> newOne =   pipeline.apply(TextIO.read().from("gs://cricket-score-study/IPL Matches 2008-2020.csv"));
+        PCollection<KV<String, PojoMatch>>  matchesRight =newOne.apply(ParDo.of(new BeamScore.ExtractMatchAsObject()));
+
+        final TupleTag<PojoScore> t1 = new TupleTag<>();
+        final TupleTag<PojoMatch> t2 = new TupleTag<>();
+
+        PCollection<KV<String, CoGbkResult>> coGbkResultCollection =
+                KeyedPCollectionTuple.of(t1, sumUpBatsmanRunsLeft)
+                        .and(t2, matchesRight)
+                        .apply(CoGroupByKey.<String>create());
+
+        PCollection<PojoScore> finalResultCollection =
+                coGbkResultCollection.apply(ParDo.of(
+                        new DoFn<KV<String, CoGbkResult>, PojoScore>() {
+                            @ProcessElement
+                            public void processElement(ProcessContext c) {
+                                KV<String, CoGbkResult> e = c.element();
+                                Iterable<PojoScore> scores = e.getValue().getAll(t1);
+                                PojoMatch match = e.getValue().getOnly(t2);
+                                for(PojoScore ss : scores){
+                                    PojoScore scoreNew = SerializationUtils.clone(ss);
+                                    scoreNew.setMatch(match);
+                                    c.output(scoreNew);
+                                }
+                            }
+                        }));
+        PCollection<String> simplyPrintVals = finalResultCollection.apply(ParDo.of( new DoFn<PojoScore, String>() {
+            @ProcessElement
+            public void processElement(ProcessContext c) {
+                PojoScore s = c.element();
+                c.output(s.getId() +","+ s.getBatsman()  +","+s.getTotal_runs()  +","+s.getMatch().getPlayer_of_match());
+            }
+        }
+        ));
+
+        PCollection<AvroScore>  avroScoresCol = finalResultCollection.apply(ParDo.of(new BeamScore.ConvertToAvro()));
+       // avroScoresCol.apply(AvroIO.write(AvroScore.class).to("/Users/krisnunes/Study/archive/file.avro"));
+       // simplyPrintVals.apply(TextIO.write().to("/Users/krisnunes/Study/archive/archive/test.csv").withoutSharding());
+
+        avroScoresCol.apply(
+                "Write to BigQuery",
+                BigQueryIO.<AvroScore>write()
+                        .to("java-maven-dataflow:avrotest.avrotab")
+                        .withWriteDisposition(BigQueryIO.Write.WriteDisposition.WRITE_APPEND)
+                        .withCreateDisposition(BigQueryIO.Write.CreateDisposition.CREATE_IF_NEEDED)
+                        .optimizedWrites());
+
+        pipeline.run();
+    }
+
+
+
     private static void processLocal(){
         Pipeline pipeline = Pipeline.create();
 
@@ -132,6 +200,7 @@ public class HelloBeam {
     }
     public static final void main(String args[]) throws Exception {
        // processLocal();
-        processLocalViaPardo();
+        // processLocalViaPardo();
+        joinUseCase();
     }
 }

@@ -1,0 +1,49 @@
+    {
+      "type": "record",
+      "name": "AvroScore",
+        "namespace":"com.nuneskris.study.beam",
+         "fields": [
+                {"name": "id","type": ["null", "string"]},
+                {"name": "inning","type": "int","default": 0},
+                {"name": "over","type": "int","default": 0 },
+                {"name": "ball", "type": "int", "default": 0},
+                {"name": "batsman","type": ["null", "string"]},
+                {"name": "non_striker","type": ["null", "string"] },
+                {"name": "bowler", "type": ["null", "string"] },
+                {"name": "batsman_runs","type": "int", "default": 0 },
+                {"name": "extra_runs","type": "int",  "default": 0 },
+                {"name": "total_runs", "type": "int","default": 0},
+                {"name": "non_boundary", "type": "int", "default":0},
+                {"name": "is_wicket","type": "int", "default": 0},
+                {"name": "dismissal_kind", "type": ["null", "string"]},
+                {"name": "player_dismissed","type": ["null", "string"]},
+                {"name": "fielder","type": ["null", "string"]},
+                { "name": "extras_type","type": ["null", "string"]},
+                {"name": "batting_team","type": ["null", "string"]},
+                {"name": "bowling_team", "type": ["null", "string"]},
+                {"name":"match", "type":[ "null", {
+                        "type":"record",
+                        "name":"AvroMatch",
+                        "fields":[
+                                {"name":"id", "type": ["null", "string"]},
+                                {"name":"city", "type": ["null", "string"]},
+                                {"name":"player_of_match", "type": ["null", "string"]},
+                                {"name":"venue", "type": ["null", "string"]},
+                                {"name":"neutral_venue", "type": ["null", "string"]},
+                                {"name":"team1", "type": ["null", "string"]},
+                                {"name":"team2", "type": ["null", "string"]},
+                                {"name":"toss_winner", "type": ["null", "string"]},
+                                {"name":"toss_decision", "type": ["null", "string"]},
+                                {"name":"winner", "type": ["null", "string"]},
+                                {"name":"result", "type": ["null", "string"]},
+                                {"name":"result_margin", "type":"int", "default": 0},
+                                {"name":"eliminator", "type": ["null", "string"]},
+                                {"name":"method", "type": ["null", "string"]},
+                                {"name":"umpire1", "type": ["null", "string"]},
+                                {"name":"umpire2", "type": ["null", "string"]}
+                        ]
+                    }]
+
+                }
+            ]
+        }

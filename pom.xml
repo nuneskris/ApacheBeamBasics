@@ -12,6 +12,28 @@
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
     </properties>
+    <build>
+    <plugins>
+    <plugin>
+        <groupId>org.apache.avro</groupId>
+        <artifactId>avro-maven-plugin</artifactId>
+        <version>1.11.0</version>
+        <executions>
+            <execution>
+                <phase>generate-sources</phase>
+                <goals>
+                    <goal>schema</goal>
+                </goals>
+                <configuration>
+                    <sourceDirectory>${project.basedir}/src/main/avro/</sourceDirectory>
+                    <outputDirectory>${project.basedir}/src/main/java/</outputDirectory>
+                </configuration>
+            </execution>
+        </executions>
+    </plugin>
+
+    </plugins>
+    </build>
 
     <dependencies>
 
@@ -47,6 +69,12 @@
             <version>2.34.0</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.apache.avro</groupId>
+            <artifactId>avro</artifactId>
+            <version>1.11.0</version>
+        </dependency>
+
 
 
 
@@ -79,7 +107,12 @@
             <artifactId>auto-value</artifactId>
             <version>1.7.4</version>
         </dependency>
-
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>RELEASE</version>
+            <scope>compile</scope>
+        </dependency>
 
 
     </dependencies>
