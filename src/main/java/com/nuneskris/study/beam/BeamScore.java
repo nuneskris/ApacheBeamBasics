@@ -1,5 +1,7 @@
 package com.nuneskris.study.beam;
 
+import org.apache.avro.generic.GenericData;
+import org.apache.avro.generic.GenericRecord;
 import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.values.KV;
 
@@ -58,13 +60,42 @@ public class BeamScore {
     private static SimpleDateFormat sdf = new SimpleDateFormat("yyyymmdd");
 
 
-    public static class ConvertToAvro extends DoFn<PojoScore, AvroScore>{
+    public static class ConvertToAvroSpecific extends DoFn<PojoScore, AvroScore> {
+        @ProcessElement
+        public void processElement(ProcessContext c) {
+            PojoScore  pojoScore= c.element();
+            c.output(convertToAvro(pojoScore));
+        }
+    }
+    public static class ConvertToAvroGeneric extends DoFn<PojoScore, GenericRecord>{
         @ProcessElement
         public void processElement(ProcessContext c){
-            c.output(convertToAvro(c.element()));
+            GenericRecord avroRecord = new GenericData.Record(AvroScore.SCHEMA$);
+            PojoScore pojoScore = c.element();
+            avroRecord.put("id",(pojoScore.getId()));
+            avroRecord.put("over",(pojoScore.getOver()));
+            avroRecord.put("ball",(pojoScore.getBall()));
+            avroRecord.put("non_striker",(pojoScore.getNon_striker()));
+            avroRecord.put("bowler",(pojoScore.getBowler()));
+            avroRecord.put("batsman_runs",(pojoScore.getBatsman_runs()));
+            avroRecord.put("inning",(pojoScore.getInning()));
+            avroRecord.put("batsman",(pojoScore.getBatsman()));
+            avroRecord.put("extra_runs",(pojoScore.getExtra_runs()));
+            avroRecord.put("total_runs",(pojoScore.getTotal_runs()));
+            avroRecord.put("non_boundary",(pojoScore.getNon_boundary()));
+            avroRecord.put("is_wicket",(pojoScore.getIs_wicket()));
+            avroRecord.put("batting_team",(pojoScore.getBatting_team()));
+            avroRecord.put("bowling_team",(pojoScore.getBowling_team()));
+            avroRecord.put("extras_type",(pojoScore.getExtras_type()));
+            avroRecord.put("fielder",(pojoScore.getFielder()));
+            avroRecord.put("dismissal_kind",(pojoScore.getDismissal_kind()));
+            avroRecord.put("player_dismissed",(pojoScore.getPlayer_dismissed()));
+            c.output(avroRecord);
         }
 
-        private AvroScore convertToAvro(PojoScore pojoScore) {
+    }
+
+        private static AvroScore convertToAvro(PojoScore pojoScore) {
             AvroScore avroScore = AvroScore.newBuilder()
                     .setId(pojoScore.getId())
                     .setOver(pojoScore.getOver())
@@ -90,7 +121,7 @@ public class BeamScore {
             return avroScore;
         }
 
-        private AvroMatch convertToAvroMatch(PojoMatch match) {
+        private static AvroMatch convertToAvroMatch(PojoMatch match) {
             AvroMatch avroMatch = AvroMatch.newBuilder()
                     .setPlayerOfMatch(match.getPlayer_of_match())
                     .setCity(match.getCity())
@@ -114,7 +145,6 @@ public class BeamScore {
 
             return avroMatch;
         }
-    }
 
 
     /** A {@link DoFn} that splits lines of text into individual column cells. */

@@ -1,5 +1,6 @@
 package com.nuneskris.study.beam;
 
+import org.apache.avro.generic.GenericRecord;
 import org.apache.beam.repackaged.core.org.apache.commons.lang3.SerializationUtils;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.io.TextIO;
@@ -11,9 +12,6 @@ import org.apache.beam.sdk.transforms.join.KeyedPCollectionTuple;
 import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.TupleTag;
-
-import static org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO.Write.CreateDisposition.CREATE_IF_NEEDED;
-import static org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO.Write.WriteDisposition.WRITE_APPEND;
 
 /**
  * batch pipeline.
@@ -169,65 +167,20 @@ public class HelloBeam {
         }
         ));
 
-        PCollection<AvroScore>  avroScoresCol = finalResultCollection.apply(ParDo.of(new BeamScore.ConvertToAvro()));
-       // avroScoresCol.apply(AvroIO.write(AvroScore.class).to("/Users/krisnunes/Study/archive/file.avro"));
+       // PCollection<AvroScore>  avroScoresCol = finalResultCollection.apply(ParDo.of(new BeamScore.ConvertToAvroSpecific()));
+        //avroScoresCol.apply(AvroIO.write(AvroScore.class).to("/Users/krisnunes/Study/archive/file.avro"));
        // simplyPrintVals.apply(TextIO.write().to("/Users/krisnunes/Study/archive/archive/test.csv").withoutSharding());
 
-        avroScoresCol.apply(
+
+
+        PCollection<GenericRecord>  avroScoresGenRec = finalResultCollection.apply(ParDo.of(new BeamScore.ConvertToAvroGeneric()));
+        avroScoresGenRec.apply(
                 "Write to BigQuery",
-                BigQueryIO.<AvroScore>write()
+                BigQueryIO.<GenericRecord>write()
                         .to("java-maven-dataflow:avrotest.avrotab")
-                        .withJsonSchema("    {\n" +
-                                "      \"type\": \"record\",\n" +
-                                "      \"name\": \"AvroScore\",\n" +
-                                "        \"namespace\":\"com.nuneskris.study.beam\",\n" +
-                                "         \"fields\": [\n" +
-                                "                {\"name\": \"id\",\"type\": [\"null\", \"string\"]},\n" +
-                                "                {\"name\": \"inning\",\"type\": \"int\",\"default\": 0},\n" +
-                                "                {\"name\": \"over\",\"type\": \"int\",\"default\": 0 },\n" +
-                                "                {\"name\": \"ball\", \"type\": \"int\", \"default\": 0},\n" +
-                                "                {\"name\": \"batsman\",\"type\": [\"null\", \"string\"]},\n" +
-                                "                {\"name\": \"non_striker\",\"type\": [\"null\", \"string\"] },\n" +
-                                "                {\"name\": \"bowler\", \"type\": [\"null\", \"string\"] },\n" +
-                                "                {\"name\": \"batsman_runs\",\"type\": \"int\", \"default\": 0 },\n" +
-                                "                {\"name\": \"extra_runs\",\"type\": \"int\",  \"default\": 0 },\n" +
-                                "                {\"name\": \"total_runs\", \"type\": \"int\",\"default\": 0},\n" +
-                                "                {\"name\": \"non_boundary\", \"type\": \"int\", \"default\":0},\n" +
-                                "                {\"name\": \"is_wicket\",\"type\": \"int\", \"default\": 0},\n" +
-                                "                {\"name\": \"dismissal_kind\", \"type\": [\"null\", \"string\"]},\n" +
-                                "                {\"name\": \"player_dismissed\",\"type\": [\"null\", \"string\"]},\n" +
-                                "                {\"name\": \"fielder\",\"type\": [\"null\", \"string\"]},\n" +
-                                "                { \"name\": \"extras_type\",\"type\": [\"null\", \"string\"]},\n" +
-                                "                {\"name\": \"batting_team\",\"type\": [\"null\", \"string\"]},\n" +
-                                "                {\"name\": \"bowling_team\", \"type\": [\"null\", \"string\"]},\n" +
-                                "                {\"name\":\"match\", \"type\":[ \"null\", {\n" +
-                                "                        \"type\":\"record\",\n" +
-                                "                        \"name\":\"AvroMatch\",\n" +
-                                "                        \"fields\":[\n" +
-                                "                                {\"name\":\"id\", \"type\": [\"null\", \"string\"]},\n" +
-                                "                                {\"name\":\"city\", \"type\": [\"null\", \"string\"]},\n" +
-                                "                                {\"name\":\"player_of_match\", \"type\": [\"null\", \"string\"]},\n" +
-                                "                                {\"name\":\"venue\", \"type\": [\"null\", \"string\"]},\n" +
-                                "                                {\"name\":\"neutral_venue\", \"type\": [\"null\", \"string\"]},\n" +
-                                "                                {\"name\":\"team1\", \"type\": [\"null\", \"string\"]},\n" +
-                                "                                {\"name\":\"team2\", \"type\": [\"null\", \"string\"]},\n" +
-                                "                                {\"name\":\"toss_winner\", \"type\": [\"null\", \"string\"]},\n" +
-                                "                                {\"name\":\"toss_decision\", \"type\": [\"null\", \"string\"]},\n" +
-                                "                                {\"name\":\"winner\", \"type\": [\"null\", \"string\"]},\n" +
-                                "                                {\"name\":\"result\", \"type\": [\"null\", \"string\"]},\n" +
-                                "                                {\"name\":\"result_margin\", \"type\":\"int\", \"default\": 0},\n" +
-                                "                                {\"name\":\"eliminator\", \"type\": [\"null\", \"string\"]},\n" +
-                                "                                {\"name\":\"method\", \"type\": [\"null\", \"string\"]},\n" +
-                                "                                {\"name\":\"umpire1\", \"type\": [\"null\", \"string\"]},\n" +
-                                "                                {\"name\":\"umpire2\", \"type\": [\"null\", \"string\"]}\n" +
-                                "                        ]\n" +
-                                "                    }]\n" +
-                                "\n" +
-                                "                }\n" +
-                                "            ]\n" +
-                                "        }")
-                        .withWriteDisposition(WRITE_APPEND)
-                        .withCreateDisposition(CREATE_IF_NEEDED)
+                        .useBeamSchema()
+                        .withWriteDisposition(BigQueryIO.Write.WriteDisposition.WRITE_APPEND)
+                        .withCreateDisposition(BigQueryIO.Write.CreateDisposition.CREATE_IF_NEEDED)
                         .optimizedWrites());
 
         pipeline.run();
