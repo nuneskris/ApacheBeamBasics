@@ -5,6 +5,7 @@ import org.apache.beam.repackaged.core.org.apache.commons.lang3.SerializationUti
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.io.TextIO;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO;
+import org.apache.beam.sdk.schemas.utils.AvroUtils;
 import org.apache.beam.sdk.transforms.*;
 import org.apache.beam.sdk.transforms.join.CoGbkResult;
 import org.apache.beam.sdk.transforms.join.CoGroupByKey;
@@ -174,6 +175,7 @@ public class HelloBeam {
 
 
         PCollection<GenericRecord>  avroScoresGenRec = finalResultCollection.apply(ParDo.of(new BeamScore.ConvertToAvroGeneric()));
+        avroScoresGenRec.setCoder(AvroUtils.schemaCoder(AvroScore.SCHEMA$));
         avroScoresGenRec.apply(
                 "Write to BigQuery",
                 BigQueryIO.<GenericRecord>write()
