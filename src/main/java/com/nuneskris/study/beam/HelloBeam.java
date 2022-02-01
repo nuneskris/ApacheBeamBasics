@@ -3,8 +3,11 @@ package com.nuneskris.study.beam;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.beam.repackaged.core.org.apache.commons.lang3.SerializationUtils;
 import org.apache.beam.sdk.Pipeline;
+import org.apache.beam.sdk.extensions.gcp.options.GcpOptions;
 import org.apache.beam.sdk.io.TextIO;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO;
+import org.apache.beam.sdk.options.PipelineOptions;
+import org.apache.beam.sdk.options.PipelineOptionsFactory;
 import org.apache.beam.sdk.schemas.utils.AvroUtils;
 import org.apache.beam.sdk.transforms.*;
 import org.apache.beam.sdk.transforms.join.CoGbkResult;
@@ -122,9 +125,15 @@ public class HelloBeam {
                 ;
         pipeline.run();
     }
+    public interface Options
+            extends PipelineOptions{
 
+    }
     private static void joinUseCase(){
-        Pipeline pipeline = Pipeline.create();
+        GcpOptions options = PipelineOptionsFactory.as(GcpOptions.class);
+        options.setGcpTempLocation("gs://cricket-score-study/temp");
+
+        Pipeline pipeline = Pipeline.create(options);
         PCollection<String> localData = getLocalData(pipeline);
         PCollection<PojoScore> extractScoreAsObject =  localData .apply(ParDo.of(new BeamScore.ExtractScoreAsObject()));
         PCollection<KV<String, Integer>> kv = extractScoreAsObject.apply(ParDo.of(new BeamScore.ConvertToKVForBatsman_runs()));
@@ -181,6 +190,7 @@ public class HelloBeam {
                 BigQueryIO.<GenericRecord>write()
                         .to("java-maven-dataflow:avrotest.avrotab")
                         .useBeamSchema()
+
                         .withWriteDisposition(BigQueryIO.Write.WriteDisposition.WRITE_APPEND)
                         .withCreateDisposition(BigQueryIO.Write.CreateDisposition.CREATE_IF_NEEDED)
                         .optimizedWrites());
