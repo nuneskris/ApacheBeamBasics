@@ -131,8 +131,7 @@ public class HelloBeam {
     }
     private static void joinUseCase(){
         GcpOptions options = PipelineOptionsFactory.as(GcpOptions.class);
-        options.setGcpTempLocation("gs://cricket-score-study/temp");
-
+        options.setTempLocation("gs://cricket-score-study/temp");
         Pipeline pipeline = Pipeline.create(options);
         PCollection<String> localData = getLocalData(pipeline);
         PCollection<PojoScore> extractScoreAsObject =  localData .apply(ParDo.of(new BeamScore.ExtractScoreAsObject()));
